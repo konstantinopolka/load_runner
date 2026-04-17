@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include "core/GameSession.h"
+#include "persistence/LevelStats.h"
 
 namespace {
 
@@ -38,7 +39,8 @@ void HudRenderer::draw(sf::RenderTarget& target,
                        const GameSession& session,
                        float elapsedSeconds,
                        int levelId,
-                       float mapTopY) const
+                       float mapTopY,
+                       const LevelStats& bestStats) const
 {
     const auto targetSize = target.getSize();
 
@@ -61,6 +63,7 @@ void HudRenderer::draw(sf::RenderTarget& target,
         return;
     }
 
+    // Top HUD row: current run stats
     std::ostringstream hudStream;
     hudStream << "Level " << levelId
               << "   Lives: " << session.player().lives
@@ -69,10 +72,25 @@ void HudRenderer::draw(sf::RenderTarget& target,
               << "   Time: " << formatElapsed(elapsedSeconds)
               << "   Teleports: " << session.teleportUsesRemaining();
 
-    sf::Text hudText(m_font, hudStream.str(), 18);
-    hudText.setPosition({16.0f, 18.0f});
+    sf::Text hudText(m_font, hudStream.str(), 16);
+    hudText.setPosition({16.0f, 6.0f});
     hudText.setFillColor(sf::Color(230, 235, 245));
     target.draw(hudText);
+
+    // Bottom HUD row: best recorded stats for this level
+    std::ostringstream bestStream;
+    if (bestStats.totalRuns > 0) {
+        bestStream << "Best: Time " << formatMs(bestStats.bestTimeMs)
+                   << "  Steps " << bestStats.bestSteps
+                   << "  Runs " << bestStats.totalRuns;
+    } else {
+        bestStream << "Best: -- (no completed run recorded)";
+    }
+
+    sf::Text bestText(m_font, bestStream.str(), 13);
+    bestText.setPosition({16.0f, 34.0f});
+    bestText.setFillColor(sf::Color(145, 185, 225));
+    target.draw(bestText);
 }
 
 void HudRenderer::drawGameOverOverlay(sf::RenderTarget& target, float windowWidth, float windowHeight) const
@@ -146,10 +164,18 @@ std::string HudRenderer::formatElapsed(float elapsedSeconds)
     if (elapsedSeconds < 0.0f) {
         elapsedSeconds = 0.0f;
     }
+    return formatMs(static_cast<int64_t>(elapsedSeconds * 1000.0f));
+}
 
-    const int totalSeconds = static_cast<int>(elapsedSeconds);
-    const int minutes = totalSeconds / 60;
-    const int seconds = totalSeconds % 60;
+std::string HudRenderer::formatMs(int64_t ms)
+{
+    if (ms <= 0) {
+        return "--:--";
+    }
+
+    const int64_t totalSeconds = ms / 1000;
+    const int64_t minutes = totalSeconds / 60;
+    const int64_t seconds = totalSeconds % 60;
 
     std::ostringstream oss;
     oss << std::setfill('0') << std::setw(2) << minutes

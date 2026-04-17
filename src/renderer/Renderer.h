@@ -7,6 +7,7 @@
 #include <cstdint>
 
 #include "HudRenderer.h"
+#include "persistence/LevelStats.h"
 
 class GameSession;
 class Level;
@@ -18,7 +19,8 @@ public:
               const GameSession& session,
               float elapsedSeconds,
               int levelId,
-              bool gameWon);
+              bool gameWon,
+              const LevelStats& bestStats);
 
 private:
     void updateLayout(const Level& level, sf::Vector2u windowSize);

@@ -5,7 +5,11 @@
 #include "input/InputHandler.h"
 #include "model/Level.h"
 #include "model/levels/LevelDefinitions.h"
+#include "persistence/LevelStats.h"
+#include "persistence/StatsStorage.h"
 #include "renderer/Renderer.h"
+
+static constexpr const char* kStatsFile = "loadrunner_stats.dat";
 
 int main()
 {
@@ -38,6 +42,13 @@ int main()
     int campaignLives = startLives;
     GameSession session = makeSession(currentLevelId, campaignLives);
     printLevelBootstrap(session, currentLevelId);
+
+    // Track per-level run data for stats recording
+    int levelStartLives = campaignLives;
+    bool levelStatsSaved = false;
+
+    // Load best stats for the starting level
+    LevelStats currentBestStats = StatsStorage::loadBest(kStatsFile, currentLevelId);
 
     sf::RenderWindow window(sf::VideoMode({800u, 600u}), "LoadRunner");
 
@@ -103,10 +114,24 @@ int main()
                 campaignWonPrinted = true;
             }
 
+            // Save stats exactly once when the level is completed
             const bool levelCompletedThisFrame = session.isLevelComplete();
+            if (levelCompletedThisFrame && !levelStatsSaved) {
+                const int64_t completionTimeMs = static_cast<int64_t>(elapsedSeconds * 1000.0f);
+                const int steps = session.player().steps;
+                const int livesUsed = levelStartLives - session.player().lives;
+                StatsStorage::recordRun(kStatsFile, currentLevelId, completionTimeMs, steps, livesUsed);
+                currentBestStats = StatsStorage::loadBest(kStatsFile, currentLevelId);
+                levelStatsSaved = true;
+
+                std::cout << "Stats saved for level " << currentLevelId
+                          << ": time=" << completionTimeMs << "ms"
+                          << " steps=" << steps
+                          << " livesUsed=" << livesUsed << '\n';
+            }
 
             window.clear(sf::Color(20, 24, 30));
-            renderer.draw(window, session, elapsedSeconds, currentLevelId, campaignWon);
+            renderer.draw(window, session, elapsedSeconds, currentLevelId, campaignWon, currentBestStats);
             window.display();
 
             if (!campaignWon && levelCompletedThisFrame) {
@@ -118,8 +143,11 @@ int main()
                     ++currentLevelId;
                     elapsedSeconds = 0.0f;
                     gameOverPrinted = false;
+                    levelStatsSaved = false;
 
                     session = makeSession(currentLevelId, campaignLives);
+                    levelStartLives = campaignLives;
+                    currentBestStats = StatsStorage::loadBest(kStatsFile, currentLevelId);
                     printLevelBootstrap(session, currentLevelId);
                 }
             }

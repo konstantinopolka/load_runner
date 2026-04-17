@@ -25,6 +25,7 @@ set(SOURCES
     src/model/EnemyState.cpp
     src/renderer/Renderer.cpp
     src/renderer/HudRenderer.cpp
+    src/persistence/StatsStorage.cpp
 )
 
 add_executable(${PROJECT_NAME} ${SOURCES})

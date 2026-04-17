@@ -26,7 +26,8 @@ void Renderer::draw(sf::RenderWindow& window,
                     const GameSession& session,
                     float elapsedSeconds,
                     int levelId,
-                    bool gameWon)
+                    bool gameWon,
+                    const LevelStats& bestStats)
 {
     updateLayout(session.level(), window.getSize());
     ensureStaticLayer(window.getSize());
@@ -46,7 +47,7 @@ void Renderer::draw(sf::RenderWindow& window,
     window.draw(staticSprite);
 
     drawDynamicLayer(window, session);
-    m_hud.draw(window, session, elapsedSeconds, levelId, m_levelOrigin.y);
+    m_hud.draw(window, session, elapsedSeconds, levelId, m_levelOrigin.y, bestStats);
 
     if (gameWon) {
         m_hud.drawGameWonOverlay(window,

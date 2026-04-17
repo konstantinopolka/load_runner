@@ -5,6 +5,8 @@
 
 #include <string>
 
+#include "persistence/LevelStats.h"
+
 class GameSession;
 
 /// Draws HUD and simple status overlays.
@@ -16,7 +18,8 @@ public:
               const GameSession& session,
               float elapsedSeconds,
               int levelId,
-              float mapTopY) const;
+              float mapTopY,
+              const LevelStats& bestStats) const;
 
     void drawLevelCompleteOverlay(sf::RenderTarget& target, float windowWidth, float windowHeight) const;
     void drawGameWonOverlay(sf::RenderTarget& target, float windowWidth, float windowHeight) const;
@@ -24,6 +27,7 @@ public:
 
 private:
     static std::string formatElapsed(float elapsedSeconds);
+    static std::string formatMs(int64_t ms);
 
     bool m_fontReady = false;
     sf::Font m_font;
